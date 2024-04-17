@@ -123,7 +123,15 @@
 
   <script type="module" async>
 
+    // Asynchronously load Google Charts.
     google.charts.load('current', { 'packages': ['corechart'] });
+
+    // Function used to fetch a resource via http proxy.
+    function proxyFetch(url) {
+      const proxyUrl = new URL('https://australia-southeast1-fresho-dev.cloudfunctions.net/cors-anywhere');
+      proxyUrl.searchParams.set('u', url);
+      return fetch(proxyUrl)
+    }
 
 
     PetiteVue.createApp({
@@ -168,7 +176,7 @@
           searchUrl.searchParams.set('q', ingredientName);
 
           this.status = 'searching products...';
-          const searchPage = await fetch(searchUrl).then(r => r.text());
+          const searchPage = await proxyFetch(searchUrl).then(r => r.text());
           const searchDOM = new DOMParser().parseFromString(searchPage, 'text/html');
 
           // Make sure all links use the same domain.
@@ -186,7 +194,7 @@
         this.disabled = true;
         this.ingredientChoices = [];
         this.status = 'fetching product details...';
-        const productPage = await fetch(product.url).then(r => r.text());
+        const productPage = await proxyFetch(product.url).then(r => r.text());
         const productDOM = new DOMParser().parseFromString(productPage, 'text/html');
 
         // Remove unnecessary DOM elements.
