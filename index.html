@@ -14,7 +14,7 @@
 </head>
 
 <body class="bg-gray-100 text-gray-900">
-  <div id="app" class="mx-auto p-4">
+  <div id="app" class="mx-auto p-4 max-w-[800px]">
     <div class="flex justify-center">
       <h1 class="text-2xl font-bold mb-4">MacroCalc</h1>
     </div>
@@ -23,27 +23,31 @@
       <table class="w-full text-xs sm:text-sm">
         <thead>
           <tr class="border-b border-gray-300">
-            <th class="px-4 py-2">
+            <th class="px-2 py-2">
               <span class="sm:hidden"></span>
               <span class="hidden sm:block">Ingredient</span>
             </th>
-            <th class="px-4 py-2">
+            <th class="px-2 py-2">
               <span class="sm:hidden">Amt</span>
               <span class="hidden sm:block">Amount</span>
             </th>
-            <th class="px-4 py-2">
+            <th class="px-2 py-2">
               <span class="sm:hidden">F</span>
               <span class="hidden sm:block">Fat</span>
             </th>
-            <th class="px-4 py-2">
+            <th class="px-2 py-2">
               <span class="sm:hidden">C</span>
               <span class="hidden sm:block">Carbs</span>
             </th>
-            <th class="px-4 py-2">
+            <th class="px-2 py-2">
               <span class="sm:hidden">P</span>
               <span class="hidden sm:block">Protein</span>
             </th>
-            <th class="px-4 py-2">
+            <th class="px-2 py-2">
+              <span class="sm:hidden">kcal</span>
+              <span class="hidden sm:block">Calories</span>
+            </th>
+            <th class="px-2 py-2">
               <span class="sm:hidden"></span>
               <span class="hidden sm:block">Actions</span>
             </th>
@@ -51,12 +55,13 @@
         </thead>
         <tbody>
           <tr v-for="ingredient in ingredients" :key="ingredient.name" class="border-b border-gray-300">
-            <td class="px-4 py-2 text-center">{{ ingredient.name }}</td>
-            <td class="px-4 py-2 text-center">{{ ingredient.grams.toFixed(1) }}g</td>
-            <td class="px-4 py-2 text-center">{{ ingredient.fat.toFixed(1) }}g</td>
-            <td class="px-4 py-2 text-center">{{ ingredient.carbs.toFixed(1) }}g</td>
-            <td class="px-4 py-2 text-center">{{ ingredient.protein.toFixed(1) }}g</td>
-            <td class="px-4 py-2 text-center">
+            <td class="px-2 py-2 text-center">{{ ingredient.name }}</td>
+            <td class="px-2 py-2 text-center">{{ ingredient.grams.toFixed(1) }}g</td>
+            <td class="px-2 py-2 text-center">{{ ingredient.fat.toFixed(1) }}g</td>
+            <td class="px-2 py-2 text-center">{{ ingredient.carbs.toFixed(1) }}g</td>
+            <td class="px-2 py-2 text-center">{{ ingredient.protein.toFixed(1) }}g</td>
+            <td class="px-2 py-2 text-center">{{ (ingredient.kj * .239).toFixed(1) }}kcal</td>
+            <td class="px-2 py-2 text-center">
               <button @click="delIngredient(ingredient)"
                 class="h-4 w-4 bg-red-500 text-white text-xs rounded align-middle inline-block mx-auto">&#x2715;</button>
           </tr>
@@ -68,8 +73,9 @@
             <th class="pt-8 text-center">{{ totalFat().toFixed(1) }}g</th>
             <th class="pt-8 text-center">{{ totalCarbs().toFixed(1) }}g</th>
             <th class="pt-8 text-center">{{ totalProtein().toFixed(1) }}g</th>
+            <th class="pt-8 text-center">{{ (totalKj() * .239).toFixed(1) }}kcal</th>
             <th class="pt-8 text-center">
-              <i class="h-4 w-4 bi bi-floppy2-fill cursor-pointer"></i>
+              <!-- <i class="h-4 w-4 bi bi-floppy2-fill cursor-pointer"></i> -->
             </th>
           </tr>
         </tfoot>
