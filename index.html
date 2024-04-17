@@ -216,9 +216,9 @@
         const llmUrl = new URL(`https://functions.fresho.workers.dev/genai/completion.txt`);
         llmUrl.searchParams.set('format', 'json');
         llmUrl.searchParams.set('provider', 'openai');
-        const prompt = `
+        const extractPrompt = `
           Give the following HTML page, extract the nutritional information per 100g / 100ml present
-          in it, in addition to the product amount and price of hte item in JSON format. The format is:
+          in it, in addition to the product amount and price of the item in JSON format. The format is:
 
             {
               "kj": <num>,
@@ -234,11 +234,32 @@
 
         const macros = await fetch(llmUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ prompt })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: extractPrompt })
         }).then(res => res.json());
+
+        if (!macros?.protein) {
+          const estimatePrompt = `
+          Estimate the macros for 100g of the following product in JSON format. The format is:
+
+            {
+              "kj": <num>,
+              "fat": <num>,
+              "carbs": <num>,
+              "protein": <num>,
+              "price": <num>,
+            }
+          
+          Product: ${product.title}`;
+
+          const macrosEstimate = await fetch(llmUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: estimatePrompt })
+          }).then(res => res.json());
+
+          Object.assign(macros, macrosEstimate, { amount: 100, unit: 'g' });
+        }
 
         this.addIngredient(macros);
 
