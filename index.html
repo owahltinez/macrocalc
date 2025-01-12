@@ -134,8 +134,8 @@
 
     // Function used to fetch a resource via http proxy.
     function proxyFetch(url) {
-      const proxyUrl = new URL('https://australia-southeast1-fresho-dev.cloudfunctions.net/cors-anywhere');
-      proxyUrl.searchParams.set('u', url);
+      const proxyUrl = new URL('https://web-scrapper-816806140915.australia-southeast1.run.app/content.html');
+      proxyUrl.searchParams.set('url', url);
       return fetch(proxyUrl)
     }
 
