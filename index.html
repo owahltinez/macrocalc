@@ -60,7 +60,7 @@
             <td class="px-2 py-2 text-center">{{ ingredient.fat.toFixed(1) }}g</td>
             <td class="px-2 py-2 text-center">{{ ingredient.carbs.toFixed(1) }}g</td>
             <td class="px-2 py-2 text-center">{{ ingredient.protein.toFixed(1) }}g</td>
-            <td class="px-2 py-2 text-center">{{ (ingredient.kj * .239).toFixed(1) }}kcal</td>
+            <td class="px-2 py-2 text-center">{{ (ingredient.kcal).toFixed(1) }}kcal</td>
             <td class="px-2 py-2 text-center">
               <button @click="delIngredient(ingredient)"
                 class="h-4 w-4 bg-red-500 text-white text-xs rounded align-middle inline-block mx-auto">&#x2715;</button>
@@ -73,7 +73,7 @@
             <th class="pt-8 text-center">{{ totalFat().toFixed(1) }}g</th>
             <th class="pt-8 text-center">{{ totalCarbs().toFixed(1) }}g</th>
             <th class="pt-8 text-center">{{ totalProtein().toFixed(1) }}g</th>
-            <th class="pt-8 text-center">{{ (totalKj() * .239).toFixed(1) }}kcal</th>
+            <th class="pt-8 text-center">{{ (totalKcal()).toFixed(1) }}kcal</th>
             <th class="pt-8 text-center">
               <!-- <i class="h-4 w-4 bi bi-floppy2-fill cursor-pointer"></i> -->
             </th>
@@ -118,8 +118,8 @@
     <div class="w-full sm:w-auto my-auto mt-4 space-y-2" v-show="ingredientChoices.length">
       <div v-for="product in ingredientChoices" class="cursor-pointer" @click="parseProduct(product)"
         class="flex items-center justify-start inline-block w-32">
-        <div class="px-1 py-1 text-blue-500 border border-blue-500 rounded hover:text-blue-700 hover:border-blue-700">
-          <span>{{ product.title }}</span>
+        <div class="text-sm p-1 text-blue-500 border border-blue-500 rounded hover:text-blue-700 hover:border-blue-700 flex flex-row">
+          <span class="flex-grow">{{ product.title }}</span><span class="font-mono text-nowrap">{{ product.nlabel }}</span>
         </div>
       </div>
     </div>
@@ -132,13 +132,22 @@
     // Asynchronously load Google Charts.
     google.charts.load('current', { 'packages': ['corechart'] });
 
-    // Function used to fetch a resource via http proxy.
-    function proxyFetch(url) {
-      const proxyUrl = new URL('https://web-scrapper-816806140915.australia-southeast1.run.app/content.html');
-      proxyUrl.searchParams.set('url', url);
-      return fetch(proxyUrl)
-    }
+    // Super secret, high-level security.
+    const API_KEY_1 = 'TECNS4mXvDoMJgtBqeJG';
+    const API_KEY_2 = 'OmbTyuzaBlC3eGme0gru';
+    const FOOD_DATA_URL = 'https://api.nal.usda.gov/fdc/v1';
 
+    function parseNutrients(nutrients) {
+      const x = nutrients.reduce((agg, n) => ({...agg, [n.nutrientName]: n.value}), {});
+      return {
+        kcal: x['Energy'] || null,
+        protein: x['Protein'] || null,
+        fat: x['Total lipid (fat)'] || null,
+        carbs: x['Carbohydrate, by difference'] || null,
+        fiber: x['Fiber, total dietary'] || null,
+        sugar: x['Total Sugars'] || null,
+      }
+    }
 
     PetiteVue.createApp({
       error: null,
@@ -178,20 +187,26 @@
         if (this.ingredientLookupTimer) clearTimeout(this.ingredientLookupTimer);
         this.ingredientLookupTimer = setTimeout(async () => {
           this.ingredientChoices = [];
-          const searchUrl = new URL('https://www.coles.com.au/search');
-          searchUrl.searchParams.set('q', ingredientName);
+          const searchUrl = new URL(`${FOOD_DATA_URL}/foods/search`);
+          searchUrl.searchParams.set('api_key', `${API_KEY_1}${API_KEY_2}`);
+          searchUrl.searchParams.set('query', ingredientName);
+          searchUrl.searchParams.set('dataType', 'Branded');
 
           this.status = 'searching products...';
-          const searchPage = await proxyFetch(searchUrl).then(r => r.text());
-          const searchDOM = new DOMParser().parseFromString(searchPage, 'text/html');
-
-          // Make sure all links use the same domain.
-          const baseElement = searchDOM.createElement('base');
-          baseElement.setAttribute('href', searchUrl.origin);
-          searchDOM.head.append(baseElement);
-
-          const productLinks = Array.from(searchDOM.querySelectorAll('a[href*="/product/"]')).filter(a => a.innerText);
-          this.ingredientChoices = productLinks.slice(0, 5).map(link => ({ url: link.href, title: link.innerText }));
+          
+          const searchResults = await fetch(searchUrl).then((res) => res.json());
+          this.ingredientChoices = searchResults.foods
+            .map((x) => {
+              const n = parseNutrients(x.foodNutrients);
+              return {
+                id: x.fdcId,
+                title: `${x.description} (${x.brandName})`,
+                nlabel: `${n.protein}p ${n.carbs}c ${n.fat}f`,
+                url: `https://fdc.nal.usda.gov/food-details/${x.fdcId}/nutrients`,
+                ...n,
+              }
+            })
+            .filter((x) => x.kcal && x.protein && x.carbs && x.fat);
           this.status = null;
         }, 400);
       },
@@ -199,70 +214,7 @@
       parseProduct: async function (product) {
         this.disabled = true;
         this.ingredientChoices = [];
-        this.status = 'fetching product details...';
-        const productPage = await proxyFetch(product.url).then(r => r.text());
-        const productDOM = new DOMParser().parseFromString(productPage, 'text/html');
-
-        // Remove unnecessary DOM elements.
-        Array.from(productDOM.querySelectorAll('head')).forEach(x => x.remove());
-        Array.from(productDOM.querySelectorAll('script')).forEach(x => x.remove());
-        Array.from(productDOM.querySelectorAll('style')).forEach(x => x.remove());
-        Array.from(productDOM.querySelectorAll('svg')).forEach(x => x.remove());
-        Array.from(productDOM.querySelectorAll('img')).forEach(x => x.remove());
-
-        // Process the product page using an LLM.
-        this.status = 'processing product details...';
-        // const llmUrl = new URL(`http://127.0.0.1:8787/genai/completion.txt`);
-        const llmUrl = new URL(`https://functions.fresho.workers.dev/genai/completion.txt`);
-        llmUrl.searchParams.set('format', 'json');
-        llmUrl.searchParams.set('provider', 'openai');
-        const extractPrompt = `
-          Give the following HTML page, extract the nutritional information per 100g / 100ml present
-          in it, in addition to the product amount and price of the item in JSON format. The format is:
-
-            {
-              "kj": <num>,
-              "fat": <num>,
-              "carbs": <num>,
-              "protein": <num>,
-              "price": <num>,
-              "amount": <num>,
-              "unit": "<grams | ml>"
-            }
-          
-          HTML content: ${new XMLSerializer().serializeToString(productDOM)}`;
-
-        const macros = await fetch(llmUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: extractPrompt })
-        }).then(res => res.json());
-
-        if (!macros?.protein) {
-          const estimatePrompt = `
-          Estimate the macros for 100g of the following product in JSON format. The format is:
-
-            {
-              "kj": <num>,
-              "fat": <num>,
-              "carbs": <num>,
-              "protein": <num>,
-              "price": <num>,
-            }
-          
-          Product: ${product.title}`;
-
-          const macrosEstimate = await fetch(llmUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: estimatePrompt })
-          }).then(res => res.json());
-
-          Object.assign(macros, macrosEstimate, { amount: 100, unit: 'g' });
-        }
-
-        this.addIngredient(macros);
-
+        this.addIngredient(product);
         this.status = null;
         this.disabled = false;
       },
@@ -290,8 +242,8 @@
       totalGrams: function () {
         return this.ingredients.reduce((sum, i) => sum + i.grams, 0);
       },
-      totalKj: function () {
-        return this.ingredients.reduce((sum, i) => sum + i.kj, 0);
+      totalKcal: function () {
+        return this.ingredients.reduce((sum, i) => sum + i.kcal, 0);
       },
       totalProtein: function () {
         return this.ingredients.reduce((sum, i) => sum + i.protein, 0);
