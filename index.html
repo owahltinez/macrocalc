@@ -55,7 +55,9 @@
         </thead>
         <tbody>
           <tr v-for="ingredient in ingredients" :key="ingredient.name" class="border-b border-gray-300">
-            <td class="px-2 py-2 text-center">{{ ingredient.name }}</td>
+            <td class="px-2 py-2 text-center">
+              <a class="no-underline hover:underline text-black" target="_blank" :href="ingredient.url">{{ ingredient.name }}</a>
+            </td>
             <td class="px-2 py-2 text-center">{{ ingredient.grams.toFixed(1) }}g</td>
             <td class="px-2 py-2 text-center">{{ ingredient.fat.toFixed(1) }}g</td>
             <td class="px-2 py-2 text-center">{{ ingredient.carbs.toFixed(1) }}g</td>
@@ -168,7 +170,7 @@
           fat: ratio * macros?.fat || 0,
           carbs: ratio * macros?.carbs || 0,
           protein: ratio * macros?.protein || 0,
-          kj: ratio * macros?.kj || 0,
+          kcal: ratio * macros?.kcal || 0,
           price: ratio * macros?.price || 0,
         }));
 
