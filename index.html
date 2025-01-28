@@ -190,7 +190,7 @@
     $.recipeName = '';
 
     $.addIngredient = function (product) {
-      const grams = this.gramsAdded;
+      const grams = Number(this.gramsAdded);
       const ratio = grams / 100;
       this.ingredients.push(Object.assign({}, product, {
         name: product.title,
