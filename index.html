@@ -203,6 +203,8 @@
         protein: ratio * product?.protein || 0,
         kcal: ratio * product?.kcal || 0,
         price: ratio * product?.price || 0,
+        servingSize: product?.servingSize || 100,
+        servingUnit: product?.servingUnit || 'g',
       }));
 
       this.ingredientName = null;
@@ -240,13 +242,15 @@
             const n = parseNutrients(x.foodNutrients);
             return {
               id: x.fdcId,
+              servingSize: x.servingSize,
+              servingUnit: x.servingSizeUnit,
               title: `${x.description} (${x.brandName})`,
               nlabel: `${n.protein}p ${n.carbs}c ${n.fat}f`,
               url: `https://fdc.nal.usda.gov/food-details/${x.fdcId}/nutrients`,
               ...n,
             }
           })
-          .filter((x) => x.kcal && x.protein && x.carbs && x.fat);
+          .filter((x) => x.servingSize);
         this.status = null;
       }, 400);
     };
