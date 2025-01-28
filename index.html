@@ -173,12 +173,12 @@
     function parseNutrients(nutrients) {
       const x = nutrients.reduce((agg, n) => ({ ...agg, [n.nutrientName]: n.value }), {});
       return {
-        kcal: x['Energy'] || null,
-        protein: x['Protein'] || null,
-        fat: x['Total lipid (fat)'] || null,
-        carbs: x['Carbohydrate, by difference'] || null,
-        fiber: x['Fiber, total dietary'] || null,
-        sugar: x['Total Sugars'] || null,
+        kcal: x['Energy'] || 0,
+        protein: x['Protein'] || 0,
+        fat: x['Total lipid (fat)'] || 0,
+        carbs: x['Carbohydrate, by difference'] || 0,
+        fiber: x['Fiber, total dietary'] || 0,
+        sugar: x['Total Sugars'] || 0,
       }
     }
 
