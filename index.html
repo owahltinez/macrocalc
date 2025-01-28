@@ -209,7 +209,7 @@
     };
 
     $.delIngredient = function (ingredient) {
-      this.ingredients = this.ingredients.filter(i => i !== ingredient);
+      this.ingredients = this.ingredients.filter(i => i.name !== ingredient.name);
       this.updateChart();
     };
 
