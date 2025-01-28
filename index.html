@@ -15,8 +15,9 @@
 
 <body class="bg-gray-100 text-gray-900 font-sans">
   <div id="app" class="mx-auto p-4 max-w-full lg:max-w-768px overflow-x-hidden">
-    <div class="flex justify-center">
-      <h1 class="text-2xl font-bold mb-4">MacroCalc</h1>
+    <div class="flex flex-col items-center">
+      <h1 class="text-2xl font-bold mb-2">MacroCalc</h1>
+      <h2 class="text-4xl font-bold mb-4" :show="recipeName">{{ recipeName }}</h2>
     </div>
 
     <div class="mt-4 overflow-x-auto" :show="ingredients.length">
@@ -69,31 +70,47 @@
             <td class="px-2 py-2 text-center">
               <button :on:click="delIngredient(ingredient)"
                 class="h-4 w-4 p-0 border-none cursor-pointer bg-red-500 text-white text-xs rounded inline-block mx-auto">&#x2715;</button>
+            </td>
           </tr>
         </tbody>
         <tfoot>
           <tr class="">
             <th class="pt-8 text-center uppercase">Total</th>
-            <th class="pt-8 text-center">{{ totalGrams().toFixed(1) }}g</th>
-            <th class="pt-8 text-center">{{ totalFat().toFixed(1) }}g</th>
-            <th class="pt-8 text-center">{{ totalCarbs().toFixed(1) }}g</th>
-            <th class="pt-8 text-center">{{ totalProtein().toFixed(1) }}g</th>
-            <th class="pt-8 text-center">{{ (totalKcal()).toFixed(1) }}kcal</th>
-            <th class="pt-8 text-center">
-              <!-- <i class="h-4 w-4 bi bi-floppy2-fill cursor-pointer"></i> -->
-            </th>
+            <th class="pt-8 text-center">{{ totalGrams(ingredients).toFixed(1) }}g</th>
+            <th class="pt-8 text-center">{{ totalFat(ingredients).toFixed(1) }}g</th>
+            <th class="pt-8 text-center">{{ totalCarbs(ingredients).toFixed(1) }}g</th>
+            <th class="pt-8 text-center">{{ totalProtein(ingredients).toFixed(1) }}g</th>
+            <th class="pt-8 text-center">{{ (totalKcal(ingredients)).toFixed(1) }}kcal</th>
+            <th class="pt-8 text-center"></th>
           </tr>
         </tfoot>
       </table>
     </div>
 
+    <details :show="ingredients.length" class="flex flex-col mt-4">
+      <summary class="text-center cursor-pointer">Share Recipe</summary>
+      <div class="flex flex-row">
+        <label class="flex flex-col">
+          <span>Recipe Name</span>
+          <input :bind="recipeName" type="text"
+            class="h-6 px-2 py-1 rounded border border-solid border-gray-200 focus:border-gray-700" />
+        </label>
+        <label class="flex flex-col flex-grow">
+          <span>Share Link</span>
+          <input readonly type="text" :prop:value="recipeLink(recipeName, ingredients)"
+            class="h-6 px-2 py-1 rounded border border-solid border-gray-200 focus:border-gray-700"
+            :on:click="$elem.setSelectionRange(0, $elem.value.length)" />
+        </label>
+      </div>
+    </details>
+
     <hr class="my-4 border-solid border-b-2 border-gray-300" />
 
     <div :show="ingredients.length" class="w-full sm:w-auto my-auto mt-4">
-      <div id="macro-chart" class="flex max-w-450px h-250px mx-auto justify-center"></div>
+      <div id="macro-chart" class="flex max-w-450px h-256px mx-auto justify-center"></div>
     </div>
 
-    <div class="flex flex-wrap justify-center mt-4 h-8">
+    <div :show="" class="flex flex-wrap justify-center mt-4 h-8">
       <div :show="error" class="text-red-200">
         <i class="bi bi-exclamation-lg h-4 w-4"></i>
         <span>{{ error }}</span>
@@ -143,7 +160,7 @@
     const { $ } = Mancha;
 
     // Asynchronously load Google Charts.
-    google.charts.load('current', { 'packages': ['corechart'] });
+    await google.charts.load('current', { 'packages': ['corechart'] });
 
     // Super secret, high-level security.
     const API_KEY_1 = 'TECNS4mXvDoMJgtBqeJG';
@@ -170,6 +187,7 @@
     $.ingredientName = null;
     $.ingredientChoices = [];
     $.ingredientLookupTimer = null;
+    $.recipeName = '';
 
     $.addIngredient = function (product) {
       const grams = this.gramsAdded;
@@ -269,6 +287,25 @@
     $.totalPrice = function () {
       return this.ingredients.reduce((sum, i) => sum + i.price, 0);
     };
+
+    $.recipeLink = function () {
+      const recipe = {
+        name: this.recipeName,
+        ingredients: this.ingredients,
+      };
+      const url = new URL(window.location.href);
+      return `${url.origin}${url.pathname}?recipe=${encodeURIComponent(JSON.stringify(recipe))}`;
+    };
+
+    // If a recipe is passed in the URL, parse it.
+    const url = new URL(window.location.href);
+    const recipe = url.searchParams.get('recipe');
+    if (recipe) {
+      const parsedRecipe = JSON.parse(decodeURIComponent(recipe));
+      $.recipeName = parsedRecipe.name;
+      $.ingredients = parsedRecipe.ingredients;
+      $.updateChart();
+    }
 
     await $.mount(document.body);
   </script>
