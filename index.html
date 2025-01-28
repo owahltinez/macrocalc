@@ -14,7 +14,7 @@
 </head>
 
 <body class="bg-gray-100 text-gray-900 font-sans">
-  <div id="app" class="mx-auto p-4 max-w-full lg:max-w-768px overflow-x-hidden">
+  <div class="mx-auto p-4 max-w-full lg:max-w-768px overflow-x-hidden">
     <div class="flex flex-col items-center">
       <h1 class="text-2xl font-bold mb-2">MacroCalc</h1>
       <h2 class="text-4xl font-bold mb-4" :show="recipeName">{{ recipeName }}</h2>
@@ -81,7 +81,10 @@
             <th class="pt-8 text-center">{{ totalCarbs(ingredients).toFixed(1) }}g</th>
             <th class="pt-8 text-center">{{ totalProtein(ingredients).toFixed(1) }}g</th>
             <th class="pt-8 text-center">{{ (totalKcal(ingredients)).toFixed(1) }}kcal</th>
-            <th class="pt-8 text-center"></th>
+            <th class="pt-8 text-center">
+              <button :on:click="clearRecipe(ingredients)"
+                class="h-4 w-4 p-0 border-none cursor-pointer bg-red-500 text-white text-xs rounded inline-block mx-auto">&#x2715;</button>
+            </th>
           </tr>
         </tfoot>
       </table>
@@ -213,6 +216,13 @@
       this.updateChart();
     };
 
+    $.clearRecipe = function (ingredients) {
+      this.ingredients = [];
+      this.recipeName = '';
+      window.location.search = '';
+      this.updateChart();
+    }
+
     $.lookupIngredient = function (ingredientName) {
       if (this.ingredientLookupTimer) clearTimeout(this.ingredientLookupTimer);
       this.ingredientLookupTimer = setTimeout(async () => {
@@ -309,6 +319,9 @@
 
     await $.mount(document.body);
   </script>
+
+  <!-- Cloak Window -->
+  <div class="absolute top-0 left-0 right-0 bottom-0 bg-gray-100" :show="false"></div>
 </body>
 
 </html>
