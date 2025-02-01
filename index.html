@@ -269,7 +269,6 @@
     };
 
     $.addIngredient = function (food, grams) {
-      console.log('adding ingredient', food, grams);
       this.ingredients.push({ grams, ...food })
       this.ingredientName = null;
       this.gramsAdded = 100;
@@ -366,10 +365,6 @@
       this.ingredients = this.ingredients.map(i => {
         if (i.title === ingredient.title) {
           i.grams = Number(newAmount);
-          i.fat = i.nutrients.fat * i.grams / 100;
-          i.carbs = i.nutrients.carbs * i.grams / 100;
-          i.protein = i.nutrients.protein * i.grams / 100;
-          i.kcal = i.nutrients.kcal * i.grams / 100;
         }
         return i;
       });

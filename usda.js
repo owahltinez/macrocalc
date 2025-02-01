@@ -9,7 +9,9 @@ function authenticatedRequest(url) {
 }
 
 function parseNutrients(nutrients) {
-  const x = nutrients.reduce((agg, n) => ({ ...agg, [n.nutrientName]: n.value }), {});
+  const x = nutrients.reduce((agg, n) => (
+    { ...agg, [n.nutrientName || n.nutrient.name]: n.value || n.amount || 0 }
+  ), {});
   return {
     kcal: x['Energy'] || 0,
     protein: x['Protein'] || 0,
@@ -30,6 +32,7 @@ function parseFoodSearchResult(result) {
       size: result.servingSize,
       unit: result.servingSizeUnit,
     },
+    url: `https://fdc.nal.usda.gov/fdc-app.html#/food-details/${result.fdcId}/nutrients`,
   }
 }
 
@@ -38,14 +41,16 @@ function parseFoodIdLookupResult(result) {
     id: result.fdcId,
     name: result.description,
     title: `${result.description} (${result.brandName})`,
-    nutrients: {
-      kcal: result.labelNutrients.calories?.value,
-      protein: result.labelNutrients.protein?.value,
-      fat: result.labelNutrients.fat?.value,
-      carbs: result.labelNutrients.carbohydrates?.value,
-      fiber: result.labelNutrients.fiber?.value,
-      sugar: result.labelNutrients.sugars?.value,
-    },
+    nutrients: parseNutrients(result.foodNutrients),
+    // NOTE: These are different numbers! Probably depends on serving size.
+    // nutrients: {
+    //   kcal: result.labelNutrients.calories?.value || 0,
+    //   protein: result.labelNutrients.protein?.value || 0,
+    //   fat: result.labelNutrients.fat?.value || 0,
+    //   carbs: result.labelNutrients.carbohydrates?.value || 0,
+    //   fiber: result.labelNutrients.fiber?.value || 0,
+    //   sugar: result.labelNutrients.sugars?.value || 0,
+    // },
     serving: {
       size: result.servingSize,
       unit: result.servingSizeUnit,
