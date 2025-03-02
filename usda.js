@@ -65,13 +65,13 @@ function filterMissingMacros(food) {
 
 export class USDA {
 
-  static async lookupFoodId(fdcId) {
+  async lookupFoodId(fdcId) {
     const url = new URL(`${BASE_URL}/food/${fdcId}`);
     const result = await authenticatedRequest(url).then((res) => res.json());
     return parseFoodIdLookupResult(result);
   }
 
-  static async searchFoods(query) {
+  async searchFoods(query) {
     this.ingredientChoices = [];
     const url = new URL(`${BASE_URL}/foods/search`);
     url.searchParams.set('query', query);

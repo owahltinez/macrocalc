@@ -242,6 +242,9 @@
 
   <script type="module" async>
     import { USDA } from "./usda.js";
+    import { Local } from "./local.js";
+    const db = new Local();
+
     const { $ } = Mancha;
 
     // Asynchronously load Google Charts.
@@ -295,9 +298,10 @@
 
         try {
           this.ingredientChoices = await Promise.race([
-            USDA.searchFoods(this.ingredientName),
+            db.searchFoods(this.ingredientName),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out')), 30_000))
           ]);
+          console.log('searchIngredients', this.ingredientChoices);
         } catch (exc) {
           this.error = exc.message;
         }
@@ -377,7 +381,7 @@
       this.recipeName = name;
       this.ingredients = await Promise.all(ingredients.split('|').map(async (i) => {
         const [id, grams] = i.split(':', 2);
-        const ingredient = await USDA.lookupFoodId(id);
+        const ingredient = await db.lookupFoodId(id);
         return { grams: Number(grams), ...ingredient };
       }));
     }
