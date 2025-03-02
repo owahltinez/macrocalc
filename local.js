@@ -25,6 +25,8 @@ function parseProductLookupResult(result) {
 
 const fuseOptions = {
   keys: ["name", "brand"],
+  ignoreDiacritics: true,
+  ignoreLocation: true,
   threshold: 0.4,
 };
 
