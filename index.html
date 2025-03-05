@@ -99,7 +99,14 @@
 
     <details :show="ingredients.length" class="flex flex-col mt-4">
       <summary class="text-center cursor-pointer">Share Recipe</summary>
-      <div class="flex flex-row">
+      <div class="flex flex-row gap-2">
+        <div class="flex flex-col">
+          <span>&#8203;</span>
+          <div class="cursor-pointer transition text-gray-700 hover:text-black"
+            :on:click="printElement(document.querySelector('#nutritional-info'))">
+            <i class="bi bi-printer text-2xl"></i>
+          </div>
+        </div>
         <label class="flex flex-col">
           <span>Recipe Name</span>
           <input :bind="recipeName" type="text"
@@ -123,7 +130,8 @@
         <div id="macro-chart" class="flex w-256px h-256px -mt-4 mx-auto justify-center"></div>
 
         <!-- Table -->
-        <div class="w-320px p-2 border-solid border-2 border-gray-900">
+        <div id="nutritional-info" class="font-sans w-320px p-2 border-solid border-2 border-gray-900">
+          <h2 :show="recipeName" class="text-xl text-center my-0">{{ recipeName }}</h2>
           <table class="w-full text-xs sm:text-sm border-collapse border-solid border-0">
             <thead>
               <tr class="border-0 border-b-2 border-solid border-gray-900">
@@ -242,9 +250,6 @@
   <script type="module" async>
     import { USDA } from "./usda.js";
     import { Local } from "./local.js";
-    import { Nutritionix } from "./nutritionix.js";
-    // const db = new Local();
-    // const db = new Nutritionix();
     const db = { usda: new USDA(), local: new Local() };
 
     const { $ } = Mancha;
@@ -405,6 +410,28 @@
       url.searchParams.set('recipe', recipeData || '');
       return url.href;
     };
+
+    $.printElement = function (elem) {
+      // Open a new window
+      const win = window.open("");
+
+      // Clone the current document's style tags (both inline <style> and linked stylesheets)
+      const styles = Array.from(document.querySelectorAll("style, link[rel='stylesheet']"))
+        .map(style => style.outerHTML)
+        .join("");
+
+      // Write a new HTML document with the cloned styles and the table's content
+      win.document.write("<html><head><title>Print Page</title>" + styles + "</head><body>");
+      win.document.write(elem.outerHTML);
+      win.document.write("</body></html>");
+
+      win.document.close(); // Necessary for some browsers to complete rendering
+      win.focus();          // Focus on the new window
+
+      // Trigger print and close the window afterward
+      win.print();
+      win.close();
+    }
 
     // If a recipe is passed in the URL, parse it.
     const url = new URL(window.location.href);
