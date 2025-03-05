@@ -1,28 +1,42 @@
 // Super secret, high-level security.
-const API_KEY_1 = 'TECNS4mXvDoMJgtBqeJG';
-const API_KEY_2 = 'OmbTyuzaBlC3eGme0gru';
-const BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
+const API_KEY_1 = "TECNS4mXvDoMJgtBqeJG";
+const API_KEY_2 = "OmbTyuzaBlC3eGme0gru";
+const BASE_URL = "https://api.nal.usda.gov/fdc/v1";
+
+function titleCase(str) {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
 function authenticatedRequest(url) {
-  url.searchParams.set('api_key', API_KEY_1 + API_KEY_2);
+  url.searchParams.set("api_key", API_KEY_1 + API_KEY_2);
   return fetch(url);
 }
 
 function parseNutrients(nutrients) {
-  const x = nutrients.reduce((agg, n) => (
-    { ...agg, [n.nutrientName || n.nutrient.name]: n.value || n.amount || 0 }
-  ), {});
+  const x = nutrients.reduce(
+    (agg, n) => ({
+      ...agg,
+      [n.nutrientName || n.nutrient.name]: n.value || n.amount || 0,
+    }),
+    {}
+  );
   return {
-    kcal: x['Energy'] || 0,
-    protein: x['Protein'] || 0,
-    fat: x['Total lipid (fat)'] || 0,
-    carbs: x['Carbohydrate, by difference'] || 0,
-    fiber: x['Fiber, total dietary'] || 0,
-    sugar: x['Total Sugars'] || 0,
-  }
+    kcal: x["Energy"] || 0,
+    protein: x["Protein"] || 0,
+    fat: x["Total lipid (fat)"] || 0,
+    carbs: x["Carbohydrate, by difference"] || 0,
+    fiber: x["Fiber, total dietary"] || 0,
+    sugar: x["Total Sugars"] || 0,
+  };
 }
 
 function parseFoodSearchResult(result) {
+  result.description = titleCase(result.description);
+  result.brandName = titleCase(result.brandName || "Generic");
   return {
     id: result.fdcId,
     name: result.description,
@@ -33,10 +47,12 @@ function parseFoodSearchResult(result) {
       unit: result.servingSizeUnit,
     },
     url: `https://fdc.nal.usda.gov/fdc-app.html#/food-details/${result.fdcId}/nutrients`,
-  }
+  };
 }
 
 function parseFoodIdLookupResult(result) {
+  result.description = titleCase(result.description);
+  result.brandName = titleCase(result.brandName || "Generic");
   return {
     id: result.fdcId,
     name: result.description,
@@ -56,29 +72,31 @@ function parseFoodIdLookupResult(result) {
       unit: result.servingSizeUnit,
     },
     url: `https://fdc.nal.usda.gov/fdc-app.html#/food-details/${result.fdcId}/nutrients`,
-  }
+  };
 }
 
 function filterMissingMacros(food) {
-  return Object.keys(food.nutrients).some(k => food.nutrients[k] > 0);
+  return Object.keys(food.nutrients).some((k) => food.nutrients[k] > 0);
 }
 
 export class USDA {
-
   async lookupFoodId(fdcId) {
     const url = new URL(`${BASE_URL}/food/${fdcId}`);
     const result = await authenticatedRequest(url).then((res) => res.json());
-    return parseFoodIdLookupResult(result);
+    return { source: "usda", ...parseFoodIdLookupResult(result) };
   }
 
-  async searchFoods(query) {
+  async searchFoods(query, { limit = 10 } = {}) {
     this.ingredientChoices = [];
     const url = new URL(`${BASE_URL}/foods/search`);
-    url.searchParams.set('query', query);
-    url.searchParams.set('dataType', 'Branded');
+    url.searchParams.set("query", query);
+    url.searchParams.set("dataType", "Branded,Foundation");
     const result = await authenticatedRequest(url).then((res) => res.json());
     if (result.error?.message) throw new Error(result.error.message);
-    return result.foods.map(parseFoodSearchResult).filter(filterMissingMacros);
-  };
-
+    return result.foods
+      .map(parseFoodSearchResult)
+      .filter(filterMissingMacros)
+      .slice(0, limit)
+      .map((food) => ({ source: "usda", ...food }));
+  }
 }

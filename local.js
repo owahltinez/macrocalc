@@ -1,25 +1,24 @@
 import Fuse from "https://cdn.jsdelivr.net/npm/fuse.js@7.1.0/dist/fuse.mjs";
 
 function parseProductLookupResult(result) {
-  const item = result.item;
-  console.log(item);
   return {
-    id: item.id,
-    name: item.name,
-    title: `${item.name} (${item.brand})`,
+    id: result.id,
+    name: result.name,
+    title: `${result.name} (${result.brand})`,
     nutrients: {
-      kcal: item.kcal || 0,
-      protein: item.protein || 0,
-      fat: item.fat || 0,
-      carbs: item.carbs || 0,
-      fiber: item.fiber || 0,
-      sugar: item.sugar || 0,
+      kcal: result.kcal || 0,
+      protein: result.protein || 0,
+      fat: result.fat || 0,
+      carbs: result.carbs || 0,
+      fiber: result.fiber || 0,
+      sugar: result.sugar || 0,
     },
     serving: {
-      size: item.serving_size,
-      unit: item.serving_unit,
+      size: result.serving_size,
+      unit: result.serving_unit,
     },
-    url: item.url,
+    url: result.url,
+    source: "local",
   };
 }
 
@@ -54,11 +53,14 @@ export class Local {
 
   async lookupFoodId(id) {
     const products = await this.products;
-    return products.find((p) => p.id === id);
+    return parseProductLookupResult(products.find((p) => p.id == id));
   }
 
   async searchFoods(query, { limit = 10 } = {}) {
     const fuse = await this.fuse;
-    return fuse.search(query).slice(0, limit).map(parseProductLookupResult);
+    return fuse
+      .search(query)
+      .slice(0, limit)
+      .map((food) => parseProductLookupResult(food.item));
   }
 }

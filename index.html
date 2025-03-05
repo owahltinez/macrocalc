@@ -7,7 +7,6 @@
   <title>MacroCalc</title>
   <script src="//unpkg.com/mancha@0.12.15" css="utils"></script>
   <!-- <script src="//fresho-dev.github.io/mancha/mancha.js" css="utils"></script> -->
-  <script src="//unpkg.com/petite-vue"></script>
   <script src="//www.gstatic.com/charts/loader.js"></script>
   <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
@@ -243,9 +242,14 @@
   <script type="module" async>
     import { USDA } from "./usda.js";
     import { Local } from "./local.js";
-    const db = new Local();
+    import { Nutritionix } from "./nutritionix.js";
+    // const db = new Local();
+    // const db = new Nutritionix();
+    const db = { usda: new USDA(), local: new Local() };
 
     const { $ } = Mancha;
+    window.$ = $;
+    $.db = db;
 
     // Asynchronously load Google Charts.
     await google.charts.load('current', { 'packages': ['corechart'] });
@@ -298,10 +302,12 @@
 
         try {
           this.ingredientChoices = await Promise.race([
-            db.searchFoods(this.ingredientName),
+            Promise.all([
+              db.local.searchFoods(this.ingredientName),
+              db.usda.searchFoods(this.ingredientName),
+            ]).then(results => results.flat()),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out')), 30_000))
           ]);
-          console.log('searchIngredients', this.ingredientChoices);
         } catch (exc) {
           this.error = exc.message;
         }
@@ -380,16 +386,21 @@
 
       this.recipeName = name;
       this.ingredients = await Promise.all(ingredients.split('|').map(async (i) => {
-        const [id, grams] = i.split(':', 2);
-        const ingredient = await db.lookupFoodId(id);
+        const [src, id, grams] = i.split(':', 3);
+        const ingredient = await db[src].lookupFoodId(id);
         return { grams: Number(grams), ...ingredient };
       }));
     }
 
     $.recipeLink = function () {
       // Serialize the recipe in the URL component as:
-      // ${name}+${ingredient_id_1}:{grams_1}|${ingredient_id_2}:{grams_2}...
-      const recipeData = `${this.recipeName}+${this.ingredients.map(i => `${i?.id}:${i?.grams}`).join('|')}`;
+      // ${name}+${source_1}:${id_1}:{grams_1}|${source_2}:${id_2}:{grams_2}...
+      const serializedIngredients = this.ingredients
+        .filter(i => i?.source && i?.id && i?.grams)
+        .map(i => `${i.source}:${i.id}:${i.grams}`)
+        .join('|');
+      console.log('serializedIngredients', serializedIngredients);
+      const recipeData = `${this.recipeName}+${serializedIngredients}`;
       const url = new URL(window.location.href);
       url.searchParams.set('recipe', recipeData || '');
       return url.href;

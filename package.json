@@ -1,0 +1,24 @@
+{
+  "name": "macrocalc",
+  "version": "0.0.1",
+  "description": "Simple tool to calculate the macros of a recipe given a list of ingredients.",
+  "main": "index.js",
+  "scripts": {
+    "start:srv": "npx wrangler dev index.js",
+    "start:web": "npx http-server --port 0",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/owahltinez/macrocalc.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/owahltinez/macrocalc/issues"
+  },
+  "homepage": "https://github.com/owahltinez/macrocalc#readme",
+  "dependencies": {
+    "hono": "^4.7.4"
+  }
+}
