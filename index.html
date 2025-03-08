@@ -97,14 +97,15 @@
       </table>
     </div>
 
-    <details :show="ingredients.length" class="flex flex-col mt-4">
+    <details :show="ingredients.length" class="flex flex-col mt-4 justify-center items-center">
       <summary class="text-center cursor-pointer">Share Recipe</summary>
-      <div class="flex flex-row gap-2">
+      <div class="flex flex-col gap-2 max-w-128 w-full">
         <div class="flex flex-col">
           <span>&#8203;</span>
-          <div class="cursor-pointer transition text-gray-700 hover:text-black"
-            :on:click="printElement(document.querySelector('#nutritional-info'))">
+          <div :on:click="printElement(document.querySelector('#nutritional-info'))"
+            class="flex flex-row items-center gap-2 cursor-pointer transition text-gray-700 bg-gray-200 hover:bg-gray-300 border border-solid border-gray-700 rounded p-2">
             <i class="bi bi-printer text-2xl"></i>
+            <span class="text-xl">Print Nutritional Label</span>
           </div>
         </div>
         <label class="flex flex-col">
@@ -131,7 +132,10 @@
 
         <!-- Table -->
         <div id="nutritional-info" class="font-sans w-320px p-2 border-solid border-2 border-gray-900">
+          <!-- Recipe Title -->
           <h2 :show="recipeName" class="text-xl text-center my-0">{{ recipeName }}</h2>
+
+          <!-- Nutrition Facts -->
           <table class="w-full text-xs sm:text-sm border-collapse border-solid border-0">
             <thead>
               <tr class="border-0 border-b-2 border-solid border-gray-900">
@@ -193,10 +197,20 @@
               </tr>
             </tbody>
           </table>
-          <p class="text-xs text-justify mt-2">
-            <span class="font-bold">Ingredients: </span>
-            <span :text="sortedIngredients(ingredients)"></span>
-          </p>
+
+          <div class="flex flex-row gap-2">
+
+            <!-- Ingredients -->
+            <p class="flex-grow text-xs text-justify mt-2">
+              <span class="font-bold">Ingredients: </span>
+              <span :text="sortedIngredients(ingredients)"></span>
+            </p>
+
+            <!-- QR Code-->
+            <div class="pl-2 pt-2">
+              <img class="w-12 h-12" alt="QR Code" :attr:src="recipeQRCode(recipeName, ingredients)" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -397,21 +411,26 @@
       }));
     }
 
-    $.recipeLink = function () {
+    $.recipeLink = function (recipeName, ingredients) {
       // Serialize the recipe in the URL component as:
       // ${name}+${source_1}:${id_1}:{grams_1}|${source_2}:${id_2}:{grams_2}...
-      const serializedIngredients = this.ingredients
+      const serializedIngredients = ingredients
         .filter(i => i?.source && i?.id && i?.grams)
         .map(i => `${i.source}:${i.id}:${i.grams}`)
         .join('|');
       console.log('serializedIngredients', serializedIngredients);
-      const recipeData = `${this.recipeName}+${serializedIngredients}`;
+      const recipeData = `${recipeName}+${serializedIngredients}`;
       const url = new URL(window.location.href);
       url.searchParams.set('recipe', recipeData || '');
       return url.href;
     };
 
-    $.printElement = function (elem) {
+    $.recipeQRCode = function (recipeName, ingredients) {
+      const urlParam = encodeURIComponent(this.recipeLink(recipeName, ingredients));
+      return `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${urlParam}`;
+    };
+
+    $.printElement = async function (elem) {
       // Open a new window
       const win = window.open("");
 
@@ -420,10 +439,18 @@
         .map(style => style.outerHTML)
         .join("");
 
+
       // Write a new HTML document with the cloned styles and the table's content
       win.document.write("<html><head><title>Print Page</title>" + styles + "</head><body>");
       win.document.write(elem.outerHTML);
       win.document.write("</body></html>");
+
+      // Await for all images to load.
+      const images = Array.from(win.document.querySelectorAll('img'));
+      await Promise.all(images.map(img => new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      })));
 
       win.document.close(); // Necessary for some browsers to complete rendering
       win.focus();          // Focus on the new window

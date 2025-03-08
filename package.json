@@ -6,6 +6,7 @@
   "scripts": {
     "start:srv": "npx wrangler dev index.js",
     "start:web": "npx http-server --port 0",
+    "start": "npm run start:web",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
